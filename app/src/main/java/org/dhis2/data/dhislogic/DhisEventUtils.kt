@@ -1,12 +1,14 @@
 package org.dhis2.data.dhislogic
 
-import javax.inject.Inject
-import org.dhis2.utils.DateUtils
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
+import org.hisp.dhis.android.core.period.PeriodType
 import org.hisp.dhis.android.core.program.ProgramStage
+import org.joda.time.DateTime
+import java.util.Date
+import javax.inject.Inject
 
 class DhisEventUtils @Inject constructor(
     val d2: D2,
@@ -24,7 +26,7 @@ class DhisEventUtils @Inject constructor(
         val stage =
             d2.programModule().programStages().uid(event.programStage()).blockingGet()
 
-        val isExpired = DateUtils.getInstance().isEventExpired(
+        val isExpired = isEventExpired(
             event.eventDate(),
             event.completedDate(),
             event.status(),
@@ -39,12 +41,12 @@ class DhisEventUtils @Inject constructor(
             .byUid().eq(event.organisationUnit()).one().blockingExists()
         val hasCatComboAccess = dhisCategoryUtils.getEventCatComboAccess(event)
         return dhisEnrollmentUtils.isEventEnrollmentOpen(event) &&
-            !blockAfterComplete &&
-            !isExpired &&
-            dhisAccessUtils.getEventAccessDataWrite(event) &&
-            dhisOrgUnitUtils.eventInOrgUnitRange(event) &&
-            isInCaptureOrgUnit &&
-            hasCatComboAccess
+                !blockAfterComplete &&
+                !isExpired &&
+                dhisAccessUtils.getEventAccessDataWrite(event) &&
+                dhisOrgUnitUtils.eventInOrgUnitRange(event) &&
+                isInCaptureOrgUnit &&
+                hasCatComboAccess
     }
 
     fun checkAddEventInEnrollment(
@@ -61,16 +63,48 @@ class DhisEventUtils @Inject constructor(
             .byDeleted().isFalse
             .blockingCount()
         val stageNotRepeatableZeroCount = stage.repeatable() != true &&
-            totalEventCount == 0
+                totalEventCount == 0
         val stageRepeatableZeroCount = stage.repeatable() == true &&
-            totalEventCount == 0
+                totalEventCount == 0
         val stageRepeatableCountSelected = stage.repeatable() == true &&
-            totalEventCount > 0 && isSelected
+                totalEventCount > 0 && isSelected
 
         return enrollmentStatusCheck && (
-            stageNotRepeatableZeroCount ||
-                stageRepeatableZeroCount ||
-                stageRepeatableCountSelected
-            )
+                stageNotRepeatableZeroCount ||
+                        stageRepeatableZeroCount ||
+                        stageRepeatableCountSelected
+                )
+    }
+
+    fun isEventExpired(
+        eventDate: Date?,
+        completeDate: Date?,
+        status: EventStatus?,
+        compExpDays: Int,
+        programPeriodType: PeriodType?,
+        expDays: Int
+    ): Boolean {
+        if (status == EventStatus.COMPLETED && completeDate == null) {
+            return false
+        }
+
+        val expiredBecauseOfPeriod: Boolean
+        val expiredBecauseOfCompletion: Boolean = if (status == EventStatus.COMPLETED) {
+            DateTime(completeDate).plusDays(compExpDays).isBeforeNow
+        } else {
+            false
+        }
+
+        return if (programPeriodType != null) {1
+            val currentPeriod = d2.periodModule().periodHelper()
+                .blockingGetPeriodForPeriodTypeAndDate(
+                    programPeriodType,
+                    eventDate!!,
+                    false
+                )
+            val lastDateToEdit = DateTime(currentPeriod.endDate()).plusDays(expDays)
+            expiredBecauseOfPeriod = lastDateToEdit.isBeforeNow
+            expiredBecauseOfPeriod || expiredBecauseOfCompletion
+        } else expiredBecauseOfCompletion
     }
 }
