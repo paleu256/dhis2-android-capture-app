@@ -1,11 +1,20 @@
 package org.dhis2.data.dhislogic
 
-import javax.inject.Inject
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.helpers.UidsHelper
 import org.hisp.dhis.android.core.event.Event
+import javax.inject.Inject
 
 class DhisCategoryUtils @Inject constructor(val d2: D2) {
+
+    fun getEventCatComboAccess(eventUid: String): Boolean {
+        return getEventCatComboAccess(
+            d2.eventModule().events()
+                .uid(eventUid)
+                .blockingGet()
+        )
+    }
+
     fun getEventCatComboAccess(event: Event): Boolean {
         return if (event.attributeOptionCombo() != null) {
             val optionUid =
@@ -13,10 +22,12 @@ class DhisCategoryUtils @Inject constructor(val d2: D2) {
                     d2.categoryModule()
                         .categoryOptionCombos().withCategoryOptions()
                         .uid(event.attributeOptionCombo())
-                        .blockingGet().categoryOptions()
+                        .blockingGet()
+                        .categoryOptions()
                 )
-            val options =
-                d2.categoryModule().categoryOptions().byUid().`in`(optionUid).blockingGet()
+            val options = d2.categoryModule().categoryOptions()
+                .byUid().`in`(optionUid)
+                .blockingGet()
             var access = true
             val eventDate = event.eventDate()
             for (option in options) {

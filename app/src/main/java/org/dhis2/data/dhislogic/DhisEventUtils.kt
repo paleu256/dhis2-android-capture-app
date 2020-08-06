@@ -26,7 +26,7 @@ class DhisEventUtils @Inject constructor(
         val stage =
             d2.programModule().programStages().uid(event.programStage()).blockingGet()
 
-        val isExpired = isEventExpired(
+        val isExpired = hasEventExpired(
             event.eventDate(),
             event.completedDate(),
             event.status(),
@@ -44,7 +44,7 @@ class DhisEventUtils @Inject constructor(
                 !blockAfterComplete &&
                 !isExpired &&
                 dhisAccessUtils.getEventAccessDataWrite(event) &&
-                dhisOrgUnitUtils.eventInOrgUnitRange(event) &&
+                dhisOrgUnitUtils.dateInOrgUnitRange(event.eventDate(), event.organisationUnit()) &&
                 isInCaptureOrgUnit &&
                 hasCatComboAccess
     }
@@ -76,7 +76,7 @@ class DhisEventUtils @Inject constructor(
                 )
     }
 
-    fun isEventExpired(
+    fun hasEventExpired(
         eventDate: Date?,
         completeDate: Date?,
         status: EventStatus?,
