@@ -4,11 +4,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ActivityTestRule
 import org.dhis2.usescases.BaseTest
 import org.dhis2.usescases.event.entity.EventDetailsUIModel
+import org.dhis2.usescases.event.entity.EventStatusUIModel
 import org.dhis2.usescases.event.entity.ProgramStageUIModel
 import org.dhis2.usescases.event.entity.TEIProgramStagesUIModel
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
 import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialActivity
 import org.dhis2.usescases.teiDashboard.TeiDashboardMobileActivity
+import org.dhis2.usescases.teidashboard.robot.eventRobot
 import org.dhis2.usescases.teidashboard.robot.teiDashboardRobot
 import org.junit.Rule
 import org.junit.Test
@@ -75,9 +77,34 @@ class EventTest: BaseTest() {
         }
     }
 
+    @Test
+    fun shouldSuccessfullyUpdateAndSaveEvent() {
+        val labMonitoring = "Lab monitoring"
+        val radioFormLength = 4
+
+        prepareEventToUpdateIntentAndLaunchActivity(ruleTeiDashboard)
+
+        teiDashboardRobot {
+            clickOnStageGroup(labMonitoring)
+            clickOnEventGroupByStage(labMonitoring)
+        }
+
+        eventRobot {
+            fillRadioButtonForm(radioFormLength)
+            clickOnFormFabButton()
+            clickOnFinishAndComplete()
+        }
+
+        teiDashboardRobot {
+            clickOnStageGroup(labMonitoring)
+            checkEventStateStageGroup(labMonitoringStatus)
+        }
+    }
+
     private val tbVisitProgramStage =  createTbVisitStageModel()
     private val labMonitoringProgramStage =  createLabMonitoringStageModel()
     private val sputumProgramStage =  createSputumStageModel()
+    private val labMonitoringStatus = createEventStatusDetails()
 
     private fun createProgramStageModel() = TEIProgramStagesUIModel(
         labMonitoringProgramStage,
@@ -107,4 +134,9 @@ class EventTest: BaseTest() {
         "OU TEST PARENT"
     )
 
+    private fun createEventStatusDetails() = EventStatusUIModel(
+        "Lab monitoring",
+        "Event Completed",
+        "1/6/2020"
+    )
 }

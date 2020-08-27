@@ -18,6 +18,7 @@ import org.dhis2.common.matchers.RecyclerviewMatchers.Companion.hasItem
 import org.dhis2.common.matchers.RecyclerviewMatchers.Companion.isNotEmpty
 import org.dhis2.common.matchers.clickOnTab
 import org.dhis2.common.matchers.isToast
+import org.dhis2.usescases.event.entity.EventStatusUIModel
 import org.dhis2.usescases.event.entity.TEIProgramStagesUIModel
 import org.dhis2.usescases.programStageSelection.ProgramStageSelectionViewHolder
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.DashboardProgramViewHolder
@@ -325,5 +326,15 @@ class TeiDashboardRobot : BaseRobot() {
                 hasItem(allOf(hasDescendant(withText(secondProgramStage.name)), hasDescendant(withText(secondProgramStage.events)))),
                 hasItem(allOf(hasDescendant(withText(thirdProgramStage.name)), hasDescendant(withText(thirdProgramStage.events))))
             )))
+    }
+
+    fun checkEventStateStageGroup(eventDetails: EventStatusUIModel ) {
+        onView(withId(R.id.tei_recycler))
+            .check(matches(
+                hasItem(allOf(
+                    hasDescendant(withText(eventDetails.name)),
+                    hasDescendant(withText(eventDetails.status)),
+                    hasDescendant(withText(eventDetails.date))
+                ))))
     }
 }
