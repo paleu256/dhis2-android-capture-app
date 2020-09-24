@@ -13,6 +13,8 @@ import androidx.lifecycle.OnLifecycleEvent;
 import androidx.lifecycle.ProcessLifecycleOwner;
 import androidx.multidex.MultiDex;
 import androidx.multidex.MultiDexApplication;
+import androidx.test.espresso.idling.concurrent.IdlingThreadPoolExecutor;
+import androidx.work.Configuration;
 
 import com.crashlytics.android.Crashlytics;
 import com.facebook.stetho.Stetho;
@@ -60,6 +62,9 @@ import org.matomo.sdk.extra.TrackHelper;
 
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Singleton;
 
@@ -80,7 +85,7 @@ import static org.acra.ReportField.FILE_PATH;
 import static org.acra.ReportField.INITIAL_CONFIGURATION;
 import static org.acra.ReportField.LOGCAT;
 
-public class App extends MultiDexApplication implements Components, LifecycleObserver {
+public class App extends MultiDexApplication implements Components, LifecycleObserver, Configuration.Provider {
     static {
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
     }
@@ -387,5 +392,21 @@ public class App extends MultiDexApplication implements Components, LifecycleObs
             }
             Timber.d(e);
         });
+    }
+
+    @NonNull
+    @Override
+    public Configuration getWorkManagerConfiguration() {
+        int nThreads = Math.max(2, Math.min(Runtime.getRuntime().availableProcessors() - 1, 4));
+        return new Configuration.Builder()
+                .setExecutor(
+                        new IdlingThreadPoolExecutor(
+                                "IDLING_WORK_MANAGER",
+                                nThreads, nThreads,
+                                0L, TimeUnit.MILLISECONDS,
+                                new LinkedBlockingQueue<Runnable>(),
+                                Executors.defaultThreadFactory()
+                        )
+                ).build();
     }
 }
